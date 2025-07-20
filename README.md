@@ -1,2 +1,4 @@
-# wqk_workflow
-workflow for wqk, n8n/dify
+自动构建n8n工作流
+
+# 示例（example）
+**每日天气预报飞书通知工作流**

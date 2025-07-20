@@ -1,0 +1,211 @@
+{
+  "name": "每日天气预报飞书通知",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": "cron",
+        "cronTime": "0 8 * * *"
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        250,
+        320
+      ],
+      "id": "339f8df0-4f53-4503-813a-a13c23123e4a"
+    },
+    {
+      "parameters": {
+        "url": "http://ip-api.com/json",
+        "options": {}
+      },
+      "name": "Get Location by IP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        460,
+        320
+      ],
+      "id": "a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.city}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "If City Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        320
+      ],
+      "id": "b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "location",
+              "value": "beijing"
+            }
+          ]
+        },
+        "options": {
+          "runOnce": true
+        }
+      },
+      "name": "Set Fallback Location",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        880,
+        420
+      ],
+      "id": "c3d4e5f6-a7b8-c9d0-e1f2-a3b4c5d6e7f8"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.seniverse.com/v3/weather/now.json?key=ScWW8RhqzvZlM8aWT&location={{$json.city}}&language=zh-Hans&unit=c",
+        "options": {}
+      },
+      "name": "Get Weather",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        320
+      ],
+      "id": "e051f83a-5f53-4a1c-b30d-5e1e8f2b1e4a"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "message",
+              "value": "={{ ({ msg_type: 'interactive', card: { config: { wide_screen_mode: true }, header: { title: { tag: 'plain_text', content: '每日天气预报' } }, elements: [ { tag: 'div', text: { tag: 'lark_md', content: `**${$json.results[0].location.name}天气预报**\n- **天气**: ${$json.results[0].daily[0].text_day}\n- **温度**: ${$json.results[0].daily[0].low}°C ~ ${$json.results[0].daily[0].high}°C\n- **湿度**: ${$json.results[0].daily[0].humidity}%\n- **风力**: ${$json.results[0].daily[0].wind_scale}级` } }, { tag: 'note', elements: [ { tag: 'plain_text', content: '今天天气不错，祝您一天好心情！' } ] } ] } }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Format Lark Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        320
+      ],
+      "id": "b1a2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6"
+    },
+    {
+      "parameters": {
+        "receiveIdType": "chat_id",
+        "receiveId": "YOUR_CHAT_ID",
+        "msgType": "interactive",
+        "content": "={{JSON.stringify($node[\"Format Lark Message\"].json.card)}}"
+      },
+      "name": "Send Feishu Message",
+        "type": "n8n-nodes-feishu-lite.message",
+        "typeVersion": 1,
+        "position": [
+          1540,
+          320
+        ],
+        "credentials": {
+          "feishuApi": {
+            "id": "YOUR_FEISHU_CREDENTIAL_ID",
+            "name": "Feishu API"
+          }
+        },
+        "id": "f1g2h3i4-j5k6-l7m8-n9o0-p1q2r3s4t5u6"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Location by IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Location by IP": {
+      "main": [
+        [
+          {
+            "node": "If City Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If City Exists": {
+      "main": [
+        [
+          {
+            "node": "Get Weather",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Fallback Location",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Fallback Location": {
+      "main": [
+        [
+          {
+            "node": "Get Weather",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weather": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message": {
+      "main": [
+        [
+          {
+            "node": "Send DingTalk Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1"
+}
